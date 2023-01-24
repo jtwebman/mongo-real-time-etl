@@ -1,4 +1,4 @@
-const { MongoClient, Timestamp } = require('mongodb');
+const { MongoClient, Timestamp, ObjectID } = require('mongodb');
 
 const dbUrl = 'mongodb://localhost:27022,localhost:27023?readConcernLevel=majority';
 
@@ -8,16 +8,20 @@ const oplogDb = 'local';
 
 let lastTimestamp;
 
-function mongoRunFind() {
+const dayInMs = 86400000;
+
+function mongoRunFind(lastLog) {
   const db = client.db(oplogDb);
   const oplogCollection = db.collection('oplog.rs');
   let query = {
-    op: { $in: ['i', 'u', 'd']}
+    ns : { '$regex' : '^(test|dev)\\.'},
+    op: { $in: ['i', 'u', 'd']},
+    fromMigrate : { $exists : false }
   };
   if (lastTimestamp) {
     query.ts = { $gt: new Timestamp(lastTimestamp) };
   } else {
-    query.ts = { $gt: new Timestamp(0, Math.floor(new Date().getTime() / 1000))  };
+    query.ts = { $gt: new Timestamp(0, Math.floor(new Date().getTime() / 1000) - dayInMs * 10)  };
   }
   const oplogStream = oplogCollection.find(query, { 
     tailable: true, 
@@ -33,12 +37,25 @@ function mongoRunFind() {
 
 function mongoDate(data) {
   const [databaseName, collectionName] = data.ns.split(/\.(.*)/);
+  const timestamp = data.ts.toBigInt();
+  let recordId;
+  let isObjectID = false
+  if (data.op === 'u') {
+    isObjectID = data.o2._id instanceof ObjectID
+    recordId = data.o2._id.toString()
+  } else {
+    isObjectID = data.o._id instanceof ObjectID
+    recordId = data.o._id.toString()
+  }
   console.log(`data with ts ${data.ts.toBigInt()}:`, {
     ...data,
     databaseName,
-    collectionName
+    collectionName,
+    recordId,
+    isObjectID,
+    timestamp,
   });
-  lastTimestamp = data.ts.toBigInt();
+  lastTimestamp = timestamp;
 }
 
 function mongoError( error) {

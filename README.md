@@ -12,6 +12,6 @@ The goal at first is to get this to just Mongo DB to Postgres real time extract,
  - Allow you to override the simple abstraction and do custom things based on a collection and field.
     - Turn arrays into records in another one to many table.
     - Flatten object properties. 
-    - Nested objects into another ont to one table.
-    - Full on custom function to do what ever you want
+    - Nested objects into another one to one table.
+    - Full on custom function to do whatever you want
  - Handle creating new columnes if the Mongo object start having new properties as well as handle changing the coulmn type or ignoring when property doesn't match the type.
