@@ -1,0 +1,64 @@
+version: "3.9"
+services:
+  mongo1:
+    image: mongo:4.2-bionic
+    container_name: mongo1
+    ports:
+      - 27022:27017
+    restart: always
+    healthcheck:
+      test: ['CMD', '/health-check.sh']
+      interval: 15s
+      timeout: 10s
+      retries: 8
+    volumes:
+      - ./compose/mongo-health-check.sh:/health-check.sh
+    tmpfs:
+      - /data/db
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs" ]
+  mongo2:
+    image: mongo:4.2-bionic
+    container_name: mongo2
+    healthcheck:
+      test: ['CMD', '/health-check.sh']
+      interval: 15s
+      timeout: 10s
+      retries: 8
+    volumes:
+      - ./compose/mongo-health-check.sh:/health-check.sh
+    ports:
+      - 27023:27017
+    restart: always
+    tmpfs:
+      - /data/db
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs" ]
+  mongo-replset:
+    image: mongo:4.2-bionic
+    container_name: mongo-replset
+    volumes:
+      - ./compose/rs-init.sh:/scripts/rs-init.sh
+    entrypoint: ""
+    command: /scripts/rs-init.sh
+    depends_on:
+      mongo1:
+        condition: service_healthy
+      mongo2:
+        condition: service_healthy
+  postgres:
+    image: postgres:12.5-alpine
+    container_name: postgres
+    ports:
+      - 25432:5432
+    healthcheck:
+      test: ['CMD', '/health-check.sh', 'postgres', 'postgres', 'postgres']
+      interval: 15s
+      timeout: 10s
+      retries: 8
+    volumes:
+      - ./compose/pg-health-check.sh:/health-check.sh
+    tmpfs:
+      - /var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
