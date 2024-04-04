@@ -1,5 +1,5 @@
-const { MongoClient, Timestamp, ObjectID, Long, Decimal128 } = require('mongodb');
-const dbUrl = 'mongodb://localhost:27022,localhost:27023?readConcernLevel=majority';
+const { MongoClient, Timestamp, ObjectId, Long, Decimal128 } = require('mongodb');
+const dbUrl = 'mongodb://localhost:27022,localhost:27023,localhost:27024?readConcernLevel=majority';
 
 const client = new MongoClient(dbUrl);
 
@@ -38,7 +38,7 @@ async function mongoRunFind(lastLog) {
 }
 
 function getMongoType(value) {
-  if (value instanceof ObjectID) {
+  if (value instanceof ObjectId) {
     return {
       type: 'objectId',
       value: value.toString()
@@ -113,6 +113,12 @@ function getMongoType(value) {
   };
 }
 
+const opToOperation = {
+  i: 'insert',
+  u: 'update',
+  d: 'delete'
+}
+
 async function mongoDate(data) {
   const [databaseName, collectionName] = data.ns.split(/\.(.*)/);
   const timestamp = data.ts.toBigInt();
@@ -120,24 +126,25 @@ async function mongoDate(data) {
   let isObjectID = false;
   let propertyTypes = {};
   if (data.op === 'u') {
-    isObjectID = data.o2._id instanceof ObjectID;
+    isObjectID = data.o2._id instanceof ObjectId;
     recordId = data.o2._id.toString();
-    propertyTypes = getMongoType(data.o['$set']);
+    propertyTypes = getMongoType(data.o['$set'] || data.o['diff']);
   } else {
-    isObjectID = data.o._id instanceof ObjectID;
+    isObjectID = data.o._id instanceof ObjectId;
     recordId = data.o._id.toString();
     propertyTypes = getMongoType(data.o);
   }
     
   lastTimestamp = timestamp;
   console.dir({
-    ...data,
     databaseName,
     collectionName,
     recordId,
     isObjectID,
     timestamp,
     propertyTypes,
+    operation: opToOperation[data.op],
+    // raw: data
   }, {depth: 10});
 }
 

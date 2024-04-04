@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   mongo1:
-    image: mongo:4.2-bionic
+    image: mongo:5
     container_name: mongo1
     ports:
       - 27022:27017
@@ -17,7 +17,7 @@ services:
       - /data/db
     entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs" ]
   mongo2:
-    image: mongo:4.2-bionic
+    image: mongo:5
     container_name: mongo2
     healthcheck:
       test: ['CMD', '/health-check.sh']
@@ -32,8 +32,24 @@ services:
     tmpfs:
       - /data/db
     entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs" ]
+  mongo3:
+    image: mongo:5
+    container_name: mongo3
+    healthcheck:
+      test: ['CMD', '/health-check.sh']
+      interval: 15s
+      timeout: 10s
+      retries: 8
+    volumes:
+      - ./compose/mongo-health-check.sh:/health-check.sh
+    ports:
+      - 27024:27017
+    restart: always
+    tmpfs:
+      - /data/db
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "dbrs" ]
   mongo-replset:
-    image: mongo:4.2-bionic
+    image: mongo:5
     container_name: mongo-replset
     volumes:
       - ./compose/rs-init.sh:/scripts/rs-init.sh

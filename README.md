@@ -1,17 +1,27 @@
-# Real Time Mongo DB to Postgres Extract, Transform, and Load (ETL)
+# Would love for this to be the start of a ETL process for Mongo to Postgres or at least to SNS
 
-The goal at first is to get this to just Mongo DB to Postgres real time extract, transform, and load and then grow from there.
+Goals is this is the start of something you could use to track changes to a mongo db with also periatical full sync scans that either update a postgres DB or at first probaly jsut send sns to either queue and do the migration in another process or maybe jsut write changes to S3 for auditing and debugging
 
-## It will eventually handle the following:
+# Just testing tailing oplogs
 
- - Discover the schema of each collection and can override the basics or even fully control the name and schema on the recieving side
- - Doing a full sync on a collection by collection or whole database in a way that the current table can still be queried.
- - Tailing the oplog for changes after the full sync and updating the corresponding tables in the other side.
- - If shutdown can pick up where it left off on tailing the oplog and if the last log processed has follan off trigger a full sync.
- - Simple abstractions on what to do with different MongoDb object structures.
- - Allow you to override the simple abstraction and do custom things based on a collection and field.
-    - Turn arrays into records in another one to many table.
-    - Flatten object properties. 
-    - Nested objects into another one to one table.
-    - Full on custom function to do whatever you want
- - Handle creating new columnes if the Mongo object start having new properties as well as handle changing the coulmn type or ignoring when property doesn't match the type.
+To run start with
+
+```bash
+docker compose up -d
+```
+
+This will get you a Mongo 5 3 replica set running.
+
+Then you jsut need to run this. Each time it runs it processes all oplogs since the begining of time (or the last oplog it still has in storage).
+
+```bash
+node src/service.js
+```
+
+This just tails the oplog and prints out the changes. It is a good start to a ETL process. 
+
+# Todo
+
+- [ ] Save logs I have already processes
+- [ ] Add settings to filter databases and collections to track (Currently hardcodes to db dev and test)
+- [ ] Add setting to publish a message for each collection under watch to do a full sync message every so often

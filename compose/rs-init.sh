@@ -14,6 +14,11 @@ var config = {
       "_id": 2,
       "host": "host.docker.internal:27023",
       "priority": 1
+    },
+    {
+      "_id": 3,
+      "host": "host.docker.internal:27024",
+      "priority": 3
     }
   ]
 };
